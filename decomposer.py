@@ -8,9 +8,9 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-#input_file = "A.stl"
+input_file = "A.stl"
 #input_file = "fractal.stl"
-input_file = "Stanford dragon.stl"
+#input_file = "Stanford dragon.stl"
 output_folder = "DecompositionOUTPUT"
 
 mesh = trimesh.load(input_file, force="mesh")
