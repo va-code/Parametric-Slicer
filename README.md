@@ -13,7 +13,7 @@ As an example you can decompose the test file "A.stl" which doesn't take a very 
   
   ~python3 Onion3d_IGL
 
-A series of generic toolhead positions will be output into the DecompositionOUTPUT folder
+A series of generic 3d printer toolhead positions will be output into the DecompositionOUTPUT folder
 
 I would highly recommend changing the decomposer.py file to run the stanford dragon model if you want to see a more complex example. It will take a loooong time to run through some of the steps.
 
