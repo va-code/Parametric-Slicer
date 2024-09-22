@@ -2,10 +2,15 @@
 A basic implementation of parametric slicing based on convex decomposition
 
 As an example you can decompose the test file "A.stl" which doesn't take a very long time:
+
 ~nix-shell shell.nix
+
   ~python3 decomposer.py
+  
   ~python3 Adjacency.py
+  
   ~python3 path.py
+  
   ~python3 Onion3d_IGL
 
 A series of generic toolhead positions will be output into the DecompositionOUTPUT folder
