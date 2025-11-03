@@ -1,0 +1,9 @@
+coacd
+matplotlib
+numpy
+scipy
+networkx
+trimesh
+virtualenv
+pyglet==1.5
+

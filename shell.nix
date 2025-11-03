@@ -9,7 +9,6 @@ in
       pkgs.python3Packages.scipy
       pkgs.python3Packages.networkx
       pkgs.python3Packages.trimesh
-      pkgs.cgal
       pkgs.python3Packages.virtualenv
     ];
 
@@ -23,7 +22,7 @@ in
       source .venv/bin/activate
 
       # Install additional packages using pip
-      pip install bpy libigl coacd 
+      pip install bpy coacd 
       pip install pyglet==1.5
     '';
   }
