@@ -1,0 +1,52 @@
+# Profiling System Files
+
+This file lists all the profiling-related files added/modified for easy reference.
+
+## New Files Created:
+- profiler.py                   # Core profiling module (decorators, managers, report generation)
+- generate_final_report.py      # Consolidated report generator
+- PROFILING_GUIDE.md            # Comprehensive user guide
+- PROFILING_SUMMARY.md          # Implementation summary and technical details
+- QUICK_START_PROFILING.md      # Quick reference for common profiling tasks
+- .profiler_files.txt           # This file
+
+## Modified Files:
+- main.py                       # Added --debug flag and report generation
+- decomposer.py                 # Added profiling decorators
+- Adjaceny.py                   # Added profiling decorators
+- path.py                       # Added profiling decorators
+- Onion3d.py                    # Added profiling decorators (most comprehensive)
+- README.md                     # Added profiling documentation section
+
+## Output Files (Generated at Runtime with --debug):
+All profiling files are now in DecompositionOUTPUT/Profiling/:
+- Profiling_Report.txt         # Consolidated pipeline report
+- Profiling_Decomposer.txt     # Decomposition stage
+- Profiling_Decomposer.csv     # CSV export
+- Profiling_Adjaceny.txt       # Adjacency stage
+- Profiling_Adjaceny.csv       # CSV export
+- Profiling_Path.txt           # Path ordering stage
+- Profiling_Path.csv           # CSV export
+- Profiling_Onion3d.txt        # Onion layer stage
+- Profiling_Onion3d.csv        # CSV export
+
+## Quick Commands:
+
+# Enable profiling
+python3 main.py --debug
+
+# View main report
+cat DecompositionOUTPUT/Profiling/Profiling_Report.txt
+
+# View specific stage
+cat DecompositionOUTPUT/Profiling/Profiling_Onion3d.txt
+
+# List all profiling files
+ls DecompositionOUTPUT/Profiling/
+
+# Open CSV in Python
+python3 -c "import pandas as pd; print(pd.read_csv('DecompositionOUTPUT/Profiling/Profiling_Onion3d.csv'))"
+
+# Clean profiling outputs
+rm -rf DecompositionOUTPUT/Profiling/
+

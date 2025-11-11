@@ -1,0 +1,6 @@
+Function Name,Call Count,Total Time (s),Average Time (ms),Min Time (ms),Max Time (ms)
+create_ordered_list,1,1.442524,1442.524195,1442.524195,1442.524195
+__main__.create_ordered_list_by_convex_hull,1,1.442510,1442.509890,1442.509890,1442.509890
+calculate_centers,1,0.010181,10.180712,10.180712,10.180712
+__main__.calculate_centers,1,0.010159,10.158539,10.158539,10.158539
+save_ordered_list,1,0.000396,0.396252,0.396252,0.396252

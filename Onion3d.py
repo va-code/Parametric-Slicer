@@ -2,6 +2,10 @@ import os
 import trimesh
 import numpy as np
 import matplotlib.pyplot as plt
+from profiler import profile, ProfilerManager, profile_block
+
+# Initialize profiler from environment
+ProfilerManager.set_debug_mode(os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes'))
 
 # Define the output folder path
 output_folder = "DecompositionOUTPUT"
@@ -23,6 +27,7 @@ for mesh_file in mesh_files:
 Test_mesh = meshes[0]
 
 
+@profile
 def create_planes(mesh, direction_vector, layer_height):
     centroid = mesh.centroid
     planes = []
@@ -52,8 +57,11 @@ def create_planes(mesh, direction_vector, layer_height):
 
     return planes
 
+@profile
 def calculate_intersection_lines(mesh, planes):
     intersection_lines = []
+    epsilon = 1e-6  # Small value to avoid division by zero
+    
     for plane in planes:
         intersections = trimesh.intersections.mesh_plane(mesh, plane['normal'], plane['origin'])
         if intersections is not None and len(intersections) > 0:
@@ -63,21 +71,42 @@ def calculate_intersection_lines(mesh, planes):
                     start_point = line[i]
                     end_point = line[i + 1]
                     
+                    # Calculate line direction
                     line_direction = end_point - start_point
-                    line_direction /= np.linalg.norm(line_direction)
+                    line_dir_norm = np.linalg.norm(line_direction)
                     
+                    # Skip degenerate lines (start == end)
+                    if line_dir_norm < epsilon:
+                        continue
+                    
+                    line_direction /= line_dir_norm
+                    
+                    # Calculate normal vector (perpendicular to both plane normal and line direction)
                     normal_vector = np.cross(plane['normal'], line_direction)
-                    normal_vector /= np.linalg.norm(normal_vector)
-                    #debugging issue with normalization of normal vector is not working 
-                    if (normal_vector[0]*normal_vector[0] +normal_vector[1]*normal_vector[1] +normal_vector[2]*normal_vector[2]) > 1.05:
-                        print("Normal Vect", normal_vector)
-                        print("Start Point", start_point)
-                        print("End Point", end_point)
-                        quit()
+                    normal_vec_norm = np.linalg.norm(normal_vector)
+                    
+                    # Skip if cross product is zero (line is parallel to plane normal)
+                    if normal_vec_norm < epsilon:
+                        # Use a default perpendicular vector instead
+                        # Find any vector perpendicular to line_direction
+                        if abs(line_direction[0]) < 0.9:
+                            normal_vector = np.cross(line_direction, [1, 0, 0])
+                        else:
+                            normal_vector = np.cross(line_direction, [0, 1, 0])
+                        normal_vec_norm = np.linalg.norm(normal_vector)
+                    
+                    normal_vector /= normal_vec_norm
+                    
+                    # Sanity check: ensure normalized vector has magnitude ~1
+                    magnitude_squared = np.dot(normal_vector, normal_vector)
+                    if magnitude_squared > 1.05 or magnitude_squared < 0.95:
+                        print(f"Warning: Normal vector magnitude = {np.sqrt(magnitude_squared)}")
+                    
                     oriented_lines.append(np.concatenate([start_point, normal_vector]))
                     oriented_lines.append(np.concatenate([end_point, normal_vector]))
-                    
-            intersection_lines.append(np.array(oriented_lines))
+            
+            if len(oriented_lines) > 0:
+                intersection_lines.append(np.array(oriented_lines))
 
     return intersection_lines
     
@@ -86,6 +115,7 @@ base_vector = np.random.rand(3) - 0.5
 base_vector /= np.linalg.norm(base_vector)  # Normalize the vector
 
 # Function to show lines
+@profile
 def show_lines(Mesh, GRAPH):
     # Store all primary and secondary intersection lines
     all_intersection_lines = []
@@ -93,13 +123,13 @@ def show_lines(Mesh, GRAPH):
     # Create a random 3D vector
     random_vector = np.random.rand(3) - 0.5
     random_vector /= np.linalg.norm(random_vector)  # Normalize the vector
-    print(f"Random direction vector: {random_vector}")
+    #print(f"Random direction vector: {random_vector}")
 
     # Create primary planes and calculate intersections
     primary_planes = create_planes(Mesh, random_vector, layer_height)
-    print(f"Number of primary planes created: {len(primary_planes)}")
+    #print(f"Number of primary planes created: {len(primary_planes)}")
     primary_intersection_lines = calculate_intersection_lines(Mesh, primary_planes)
-    print(f"Number of primary intersection lines: {len(primary_intersection_lines)}")
+    #print(f"Number of primary intersection lines: {len(primary_intersection_lines)}")
     all_intersection_lines.append(primary_intersection_lines)
 
     # Create secondary planes (90 degrees offset) and calculate intersections
@@ -109,9 +139,9 @@ def show_lines(Mesh, GRAPH):
     orthogonal_vector /= np.linalg.norm(orthogonal_vector)
 
     secondary_planes = create_planes(Mesh, orthogonal_vector, layer_height)
-    print(f"Number of secondary planes created: {len(secondary_planes)}")
+    #print(f"Number of secondary planes created: {len(secondary_planes)}")
     secondary_intersection_lines = calculate_intersection_lines(Mesh, secondary_planes)
-    print(f"Number of secondary intersection lines: {len(secondary_intersection_lines)}")
+    #print(f"Number of secondary intersection lines: {len(secondary_intersection_lines)}")
     all_intersection_lines.append(secondary_intersection_lines)
     if GRAPH:
         # Visualization of the intersection lines (commented out)
@@ -148,6 +178,7 @@ def show_lines(Mesh, GRAPH):
 
     return all_intersection_lines
     
+@profile
 def ensure_faces_outward(mesh):
     # Compute the centroid of the mesh
     centroid = mesh.centroid
@@ -179,6 +210,7 @@ def ensure_faces_outward(mesh):
 
     return mesh
 
+@profile
 def Vertex_test(mesh):
     for i, vertex in enumerate(mesh.vertices):
         if 4< vertex[0] <5:
@@ -189,7 +221,7 @@ def Vertex_test(mesh):
             print("potential problem with index", i, vertex )
     
     
-
+@profile
 def truncate_planes(mesh, planes, tolerance=1e-8):
     truncated_planes = []
     for plane in planes:
@@ -198,6 +230,7 @@ def truncate_planes(mesh, planes, tolerance=1e-8):
             truncated_planes.append(plane)
     return truncated_planes
 
+@profile
 def adjust_vertices_to_planes(vertices, faces, planes, combined_directions, layer_height):
     for plane in planes:
         plane_normal = plane['normal']
@@ -212,6 +245,7 @@ def adjust_vertices_to_planes(vertices, faces, planes, combined_directions, laye
     return vertices
     
 # Ensure direction_ratio is between 0 and 1
+@profile
 def OLDOnion_layer(layer_height, face_index, mesh, direction_ratio):
     if not 0 <= direction_ratio <= 1:
         raise ValueError("direction_ratio must be between 0 and 1")
@@ -261,68 +295,113 @@ def OLDOnion_layer(layer_height, face_index, mesh, direction_ratio):
     
     return new_mesh
 
+@profile
 def Onion_layer(layer_height, face_index, mesh, direction_ratio):
-    # Ensure the layer height is a negative value for shrinking
-    #layer_height = -0.2  # Set the scaling factor for shrinking by 0.2mm
 
     # Calculate the centroid of the mesh
     centroid = mesh.vertices.mean(axis=0)
     
-    # Calculate the scaling factor relative to the centroid
-    scale_factors = np.ones_like(mesh.vertices) * -layer_height
-    scaled_vertices = mesh.vertices + (mesh.vertices - centroid) * scale_factors
+    # Calculate direction from centroid to each vertex
+    directions = mesh.vertices - centroid
+    norms = np.linalg.norm(directions, axis=1, keepdims=True)
+    
+    # Avoid division by zero for vertices at or very close to centroid
+    epsilon = 1e-10
+    safe_norms = np.where(norms < epsilon, epsilon, norms)
+    
+    # Normalize directions
+    normalized_directions = directions / safe_norms
+    
+    # Move each vertex toward centroid by exactly layer_height
+    # If vertex is closer than layer_height to centroid, move it to centroid
+    movement = np.minimum(norms.flatten(), layer_height)
+    new_vertices = mesh.vertices - normalized_directions * movement[:, np.newaxis]
+    
+    # Ensure no NaN or Inf values
+    new_vertices = np.nan_to_num(new_vertices, nan=centroid[0], posinf=centroid[0], neginf=centroid[0])
     
     # Create and return the new mesh
-    new_mesh = trimesh.Trimesh(vertices=scaled_vertices, faces=mesh.faces)
+    new_mesh = trimesh.Trimesh(vertices=new_vertices, faces=mesh.faces)
     
     return new_mesh
 
-for index, Test_mesh in enumerate(meshes):
-    # Store all intersection lines
+
+@profile
+def process_mesh_layers(mesh, layer_height, face_index, direction_ratio):
+
     all_intersection_lines = []
-
-    # Loop to apply Onion Layer transformation until the mesh's tallest point is less than 0.1
-    direction_ratio = 0
-    Test_mesh = ensure_faces_outward(Test_mesh)
-
-    #print("Test_mesh \n",Test_mesh)
-    #print("[1][2] \n",Test_mesh.bounds[1][2])
-    #print("[0][2] \n",Test_mesh.bounds[0][2])
+    Test_mesh = ensure_faces_outward(mesh.copy())
+    
     show_lines(Test_mesh, False)
-    iter = 0
-    while (Test_mesh.bounds[1][0] - Test_mesh.bounds[0][0] >= 0.1 and
-           Test_mesh.bounds[1][1] - Test_mesh.bounds[0][1] >= 0.1 and
-           Test_mesh.bounds[1][2] - Test_mesh.bounds[0][2] >= 0.1):
+    
+    # PRE-CALCULATE NUMBER OF LAYERS
+    # Calculate the maximum distance from centroid to any vertex
+    centroid = Test_mesh.vertices.mean(axis=0)
+    max_distance = np.max(np.linalg.norm(Test_mesh.vertices - centroid, axis=1))
+    
+    # With uniform shrinking, we need max_distance / layer_height iterations
+    # Plus a small buffer for the 0.1 threshold
+    num_layers = int(max_distance / layer_height) + 5  # +5 for safety margin
+    
+    # Safety check to prevent infinite loops
+    if num_layers > 1000000:
+        print(f"Warning: Calculated {num_layers} layers, capping at 1000000")
+        num_layers = 1000000
+    
+    # Process iterations until mesh is too small
+    for i in range(num_layers):
         # Show lines of the current mesh
         all_intersection_lines.extend(show_lines(Test_mesh, False))
-        # Apply the Onion Layer transformation
-        #Vertex_test(Test_mesh)
-        Test_mesh = Onion_layer(layer_height, 2, Test_mesh, direction_ratio)
+        # Apply the UNIFORM Onion Layer transformation
+        Test_mesh = Onion_layer(layer_height, face_index, Test_mesh, direction_ratio)
         Test_mesh = ensure_faces_outward(Test_mesh)
         
-        if iter == 1000000:
-            print("LIKELY ERROR, THROWING ERROR BECAUSE LOOPED 1,000,000 TIMES TRYING TO GENERATE ALL LINES FOR THE SUBMESH INDEX: ", index)
+        # Early exit if mesh becomes too small
+        if (Test_mesh.bounds[1][0] - Test_mesh.bounds[0][0] < 0.1 or
+            Test_mesh.bounds[1][1] - Test_mesh.bounds[0][1] < 0.1 or
+            Test_mesh.bounds[1][2] - Test_mesh.bounds[0][2] < 0.1):
             break
-        iter += 1
-        
-    # Output the collected intersection lines
-    #print("Collected intersection lines:", all_intersection_lines)
+    
     show_lines(Test_mesh, False)
-    output_filename = f"all_intersection_lines_{index}.txt"
-    with open(os.path.join(output_folder, output_filename), 'w') as file:
-            # Write the header
-            file.write("lines output Version=0.1\n")
-            file.write("LineX_0, LineY_0, LineZ_0, LineA_0, LineB_0, LineC_0, LineX_1, LineY_1, LineZ_1, LineA_1, LineB_1, LineC_1\n")
-            
-            # Write the intersection lines data
-            for lines in all_intersection_lines:
-                for line in lines:
-                    for i in range(len(line) - 1):
-                        start_point = line[i].flatten()  # Ensures it's a 1D array
-                        end_point = line[i + 1].flatten()  # Ensures it's a 1D array
-                        file.write(f"{float(start_point[0]):.6f}, {float(start_point[1]):.6f}, {float(start_point[2]):.6f}, {float(start_point[3]):.6f}, {float(start_point[4]):.6f}, {float(start_point[5]):.6f}, "
-                                   f"{float(end_point[0]):.6f}, {float(end_point[1]):.6f}, {float(end_point[2]):.6f}, {float(end_point[3]):.6f}, {float(end_point[4]):.4f}, {float(end_point[5]):.6f}\n")
+    return all_intersection_lines, i + 1
 
 
-    print(f"Saved intersection lines for mesh {index} to {output_filename}")
+# Main processing loop
+for index, Test_mesh in enumerate(meshes):
+    with profile_block(f"process_mesh_{index}"):
+        # Process mesh layers using optimized function
+        direction_ratio = 0
+        face_index = 2
+        
+        # Use the optimized process_mesh_layers function
+        all_intersection_lines, iter_count = process_mesh_layers(
+            Test_mesh, layer_height, face_index, direction_ratio
+        )
+        
+        print(f"Processed mesh {index} with {iter_count} iterations")
+        output_filename = f"all_intersection_lines_{index}.txt"
+        
+        with profile_block(f"write_output_file_{index}"):
+            with open(os.path.join(output_folder, output_filename), 'w') as file:
+                # Write the header
+                file.write("lines output Version=0.1\n")
+                file.write("LineX_0, LineY_0, LineZ_0, LineA_0, LineB_0, LineC_0, LineX_1, LineY_1, LineZ_1, LineA_1, LineB_1, LineC_1\n")
+                
+                # Write the intersection lines data
+                for lines in all_intersection_lines:
+                    for line in lines:
+                        for i in range(len(line) - 1):
+                            start_point = line[i].flatten()  # Ensures it's a 1D array
+                            end_point = line[i + 1].flatten()  # Ensures it's a 1D array
+                            file.write(f"{float(start_point[0]):.6f}, {float(start_point[1]):.6f}, {float(start_point[2]):.6f}, {float(start_point[3]):.6f}, {float(start_point[4]):.6f}, {float(start_point[5]):.6f}, "
+                                       f"{float(end_point[0]):.6f}, {float(end_point[1]):.6f}, {float(end_point[2]):.6f}, {float(end_point[3]):.6f}, {float(end_point[4]):.4f}, {float(end_point[5]):.6f}\n")
+
+        print(f"Saved intersection lines for mesh {index} to {output_filename}")
+
+# Generate profiling report if debug mode is enabled
+if ProfilerManager.is_debug_mode():
+    profiling_folder = os.path.join(output_folder, "Profiling")
+    os.makedirs(profiling_folder, exist_ok=True)
+    ProfilerManager.print_report(os.path.join(profiling_folder, "Profiling_Onion3d.txt"))
+    ProfilerManager.save_csv_report(os.path.join(profiling_folder, "Profiling_Onion3d.csv"))
 

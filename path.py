@@ -4,6 +4,10 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
 from scipy.spatial import distance
+from profiler import profile, ProfilerManager, profile_block
+
+# Initialize profiler from environment
+ProfilerManager.set_debug_mode(os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes'))
 
 # Define the output folder path
 output_folder = "DecompositionOUTPUT"
@@ -63,6 +67,7 @@ for mesh_file in mesh_files:
     meshes.append(mesh)
 
 # Calculate centers of the meshes
+@profile
 def calculate_centers(meshes):
     centers = []
     for mesh in meshes:
@@ -71,6 +76,7 @@ def calculate_centers(meshes):
 
 
 # Create the ordered list based on distance
+@profile
 def create_ordered_list_by_distance(connections_dict, centers, start_node):
     ordered_list = []
     visited = set()
@@ -110,6 +116,7 @@ def create_ordered_list_by_distance(connections_dict, centers, start_node):
     
     return ordered_list
 
+@profile
 def create_ordered_list_by_closest_points(connections_dict, meshes, start_node):
     ordered_list = []
     visited = set()
@@ -206,6 +213,7 @@ def create_ordered_list_by_closest_points(connections_dict, meshes, start_node):
 
     return ordered_list
 
+@profile
 def create_ordered_list_by_convex_hull(connections_dict, meshes, start_node):
     ordered_list = []
     visited = set()
@@ -251,15 +259,27 @@ def create_ordered_list_by_convex_hull(connections_dict, meshes, start_node):
 
     return ordered_list
 
-centers = calculate_centers(meshes)
-start_node =sorted_nodes[0][0]
-#ordered_list = create_ordered_list_by_distance(connections_dict, centers, sorted_nodes)
-#ordered_list = create_ordered_list_by_closest_points(connections_dict, meshes, sorted_nodes)
-ordered_list = create_ordered_list_by_convex_hull(connections_dict, meshes, start_node)
+with profile_block("calculate_centers"):
+    centers = calculate_centers(meshes)
 
-np.savetxt(os.path.join(output_folder,'ordered_list.txt'), ordered_list, fmt='%d', header='', comments='')
-print("Ordered List of Nodes saved:")
-print(ordered_list)
+start_node = sorted_nodes[0][0]
+
+with profile_block("create_ordered_list"):
+    #ordered_list = create_ordered_list_by_distance(connections_dict, centers, sorted_nodes)
+    #ordered_list = create_ordered_list_by_closest_points(connections_dict, meshes, sorted_nodes)
+    ordered_list = create_ordered_list_by_convex_hull(connections_dict, meshes, start_node)
+
+with profile_block("save_ordered_list"):
+    np.savetxt(os.path.join(output_folder,'ordered_list.txt'), ordered_list, fmt='%d', header='', comments='')
+    print("Ordered List of Nodes saved:")
+    print(ordered_list)
+
+# Generate profiling report if debug mode is enabled
+if ProfilerManager.is_debug_mode():
+    profiling_folder = os.path.join(output_folder, "Profiling")
+    os.makedirs(profiling_folder, exist_ok=True)
+    ProfilerManager.print_report(os.path.join(profiling_folder, "Profiling_Path.txt"))
+    ProfilerManager.save_csv_report(os.path.join(profiling_folder, "Profiling_Path.csv"))
 
 # Set up the 3D plot
 fig = plt.figure()
