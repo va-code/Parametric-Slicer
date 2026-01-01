@@ -26,7 +26,19 @@ with profile_block("convert_to_coacd_mesh"):
     mesh = coacd.Mesh(mesh.vertices, mesh.faces)
 
 with profile_block("run_coacd_decomposition"):
-    meshes = coacd.run_coacd(mesh)
+    # Run coacd decomposition with parameters that prevent mesh simplification
+    # decimate=False ensures the mesh is not simplified, only decomposed
+    meshes = coacd.run_coacd(
+        mesh,
+        threshold=0.05,        # Default decomposition threshold
+        resolution=2000,       # Default resolution
+        max_convex_hull=-1,    # No limit on convex hulls
+        preprocess_mode="auto", # Automatic preprocessing
+        preprocess_resolution=30, # Default preprocessing resolution
+        pca=False,             # Don't use PCA preprocessing
+        merge=True,            # Merge small parts (doesn't affect simplification)
+        decimate=False         # CRITICAL: Don't simplify/decimate the mesh
+    )
 
 '''
 for part in meshes:

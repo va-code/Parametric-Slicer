@@ -1,0 +1,120 @@
+
+==========================================================================================
+PERFORMANCE PROFILING REPORT
+==========================================================================================
+
+Total execution time tracked: 1.125s
+Total function calls tracked: 477
+
+TOP FUNCTIONS BY TOTAL TIME:
+------------------------------------------------------------------------------------------
+Function Name                               Calls     Total(s)      Avg(ms)      Min(ms)      Max(ms)
+------------------------------------------------------------------------------------------
+process_all_meshes                              1        0.529      529.444      529.444      529.444
+write_output_file_4                             1        0.159      159.469      159.469      159.469
+write_output_file_1                             1        0.136      135.767      135.767      135.767
+write_output_file_2                             1        0.098       98.016       98.016       98.016
+write_output_file_3                             1        0.058       58.106       58.106       58.106
+write_output_file_0                             1        0.041       41.328       41.328       41.328
+create_random_vector                          150        0.036        0.241        0.010       14.038
+process_iterations                              5        0.035        7.061        1.730       15.545
+calculate_intersections                       300        0.030        0.101        0.001       10.904
+show_initial_lines                              5        0.001        0.238        0.152        0.363
+load_meshes                                     1        0.000        0.334        0.334        0.334
+show_final_lines                                5        0.000        0.014        0.010        0.019
+calculate_layers                                5        0.000        0.000        0.000        0.001
+------------------------------------------------------------------------------------------
+
+TIME DISTRIBUTION ANALYSIS:
+------------------------------------------------------------------------------------------
+Function Name                                 % of Total    Cumulative %
+------------------------------------------------------------------------------------------
+process_all_meshes                                47.05%          47.05%
+write_output_file_4                               14.17%          61.22%
+write_output_file_1                               12.06%          73.28%
+write_output_file_2                                8.71%          81.99%
+write_output_file_3                                5.16%          87.15%
+write_output_file_0                                3.67%          90.83%
+create_random_vector                               3.21%          94.03%
+process_iterations                                 3.14%          97.17%
+calculate_intersections                            2.69%          99.86%
+show_initial_lines                                 0.11%          99.96%
+load_meshes                                        0.03%          99.99%
+show_final_lines                                   0.01%         100.00%
+calculate_layers                                   0.00%         100.00%
+------------------------------------------------------------------------------------------
+
+MOST FREQUENTLY CALLED FUNCTIONS:
+------------------------------------------------------------------------------------------
+Function Name                                 Call Count    Avg Time(ms)
+------------------------------------------------------------------------------------------
+calculate_intersections                              300           0.101
+create_random_vector                                 150           0.241
+show_initial_lines                                     5           0.238
+process_iterations                                     5           7.061
+show_final_lines                                       5           0.014
+calculate_layers                                       5           0.000
+write_output_file_2                                    1          98.016
+write_output_file_3                                    1          58.106
+write_output_file_0                                    1          41.328
+write_output_file_1                                    1         135.767
+write_output_file_4                                    1         159.469
+process_all_meshes                                     1         529.444
+load_meshes                                            1           0.334
+------------------------------------------------------------------------------------------
+
+POTENTIAL BOTTLENECKS:
+------------------------------------------------------------------------------------------
+(Functions with high total time OR high call count)
+
+  • process_all_meshes
+    - Total time: 0.529s (47.0% of total)
+    - Calls: 1
+    - Avg time: 529.444ms
+
+  • calculate_intersections
+    - Total time: 0.030s (2.7% of total)
+    - Calls: 300
+    - Avg time: 0.101ms
+
+  • create_random_vector
+    - Total time: 0.036s (3.2% of total)
+    - Calls: 150
+    - Avg time: 0.241ms
+
+  • write_output_file_4
+    - Total time: 0.159s (14.2% of total)
+    - Calls: 1
+    - Avg time: 159.469ms
+
+  • write_output_file_1
+    - Total time: 0.136s (12.1% of total)
+    - Calls: 1
+    - Avg time: 135.767ms
+
+  • write_output_file_2
+    - Total time: 0.098s (8.7% of total)
+    - Calls: 1
+    - Avg time: 98.016ms
+
+  • write_output_file_3
+    - Total time: 0.058s (5.2% of total)
+    - Calls: 1
+    - Avg time: 58.106ms
+
+  • write_output_file_0
+    - Total time: 0.041s (3.7% of total)
+    - Calls: 1
+    - Avg time: 41.328ms
+
+  • process_iterations
+    - Total time: 0.035s (3.1% of total)
+    - Calls: 5
+    - Avg time: 7.061ms
+
+  • show_initial_lines
+    - Total time: 0.001s (0.1% of total)
+    - Calls: 5
+    - Avg time: 0.238ms
+
+==========================================================================================

@@ -1,0 +1,5 @@
+Function Name,Call Count,Total Time (s),Average Time (ms),Min Time (ms),Max Time (ms)
+load_meshes,1,0.000318,0.318363,0.318363,0.318363
+save_adjacency_list,1,0.000169,0.168515,0.168515,0.168515
+compute_adjacency,1,0.000055,0.054685,0.054685,0.054685
+check_mesh_adjacency,10,0.000053,0.005258,0.001513,0.011432

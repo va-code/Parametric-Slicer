@@ -1,0 +1,4 @@
+Function Name,Call Count,Total Time (s),Average Time (ms),Min Time (ms),Max Time (ms)
+create_ordered_list,1,0.117314,117.314449,117.314449,117.314449
+save_ordered_list,1,0.000191,0.191278,0.191278,0.191278
+calculate_centers,1,0.000001,0.001012,0.001012,0.001012

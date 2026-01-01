@@ -72,7 +72,7 @@ def main():
     # Define the pipeline sequence
     scripts = [
         "decomposer.py",
-        "Adjaceny.py",  # Note: actual filename has typo
+        "Adjacency.py",
         "path.py",
         "Onion3d.py"
     ]

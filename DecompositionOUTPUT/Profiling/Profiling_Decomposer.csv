@@ -1,0 +1,4 @@
+Function Name,Call Count,Total Time (s),Average Time (ms),Min Time (ms),Max Time (ms)
+run_python_decomposer,1,2.053614,2053.613534,2053.613534,2053.613534
+load_decomposed_meshes,1,0.000542,0.542033,0.542033,0.542033
+verify_decomposed_meshes,1,0.000105,0.104942,0.104942,0.104942

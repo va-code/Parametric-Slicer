@@ -327,41 +327,131 @@ def Onion_layer(layer_height, face_index, mesh, direction_ratio):
 
 
 @profile
-def process_mesh_layers(mesh, layer_height, face_index, direction_ratio):
+def calculate_vase_plane_orientation(mesh, previous_meshes):
+    """
+    Calculate the plane orientation for vase mode.
+    Gets centroid of convex hull of previous meshes, finds furthest point on current mesh from that centroid,
+    and uses that as the direction vector for the plane.
+    """
+    if previous_meshes is None:
+        previous_meshes = []
+
+    # Calculate convex hull centroid of previous meshes
+    hull_centroid = np.array([0.0, 0.0, 0.0])
+    if len(previous_meshes) > 0:
+        all_hull_points = []
+        for prev_mesh in previous_meshes:
+            hull = prev_mesh.convex_hull
+            all_hull_points.extend(hull.vertices)
+        if all_hull_points:
+            combined_hull = trimesh.Trimesh(vertices=all_hull_points).convex_hull
+            hull_centroid = combined_hull.centroid
+    else:
+        # If no previous meshes, use origin
+        hull_centroid = np.array([0.0, 0.0, 0.0])
+
+    # Find the point furthest away from the hull centroid on the current mesh
+    mesh_centroid = mesh.centroid
+    max_distance = 0
+    furthest_point = mesh_centroid
+
+    for vertex in mesh.vertices:
+        distance = np.linalg.norm(vertex - hull_centroid)
+        if distance > max_distance:
+            max_distance = distance
+            furthest_point = vertex
+
+    # Direction vector from hull centroid to furthest point
+    direction_vector = furthest_point - hull_centroid
+    direction_vector = direction_vector / np.linalg.norm(direction_vector)  # Normalize
+
+    # Precalculate number of planes needed
+    num_planes = int(max_distance / 0.1) + 1
+
+    return direction_vector, num_planes
+
+@profile
+def process_vase_mode_layer(mesh, direction_vector, layer_height, layer_index, total_layers):
+    """
+    Process a single layer in vase mode.
+    Creates perpendicular planes and shifts lines inwards instead of calculating intersections.
+    """
+    # Create perpendicular planes
+    perpendicular_vector = np.cross(direction_vector, [1, 0, 0])
+    if np.linalg.norm(perpendicular_vector) == 0:
+        perpendicular_vector = np.cross(direction_vector, [0, 1, 0])
+    perpendicular_vector = perpendicular_vector / np.linalg.norm(perpendicular_vector)
+
+    # Create planes perpendicular to the original direction
+    planes = create_planes(mesh, perpendicular_vector, layer_height)
+
+    # Calculate intersections with perpendicular planes
+    perpendicular_lines = calculate_intersection_lines(mesh, planes)
+
+    # Shift lines inwards from the centroid
+    mesh_centroid = mesh.centroid
+
+    # Calculate shift amount based on layer (outer to inner)
+    shift_amount = layer_index * 0.1  # Start from 0 and increase
+
+    shifted_lines = []
+    for line_group in perpendicular_lines:
+        shifted_group = lines_centroid_shift(mesh_centroid, line_group, shift_amount)
+        shifted_lines.extend(shifted_group)
+
+    return shifted_lines
+
+@profile
+def process_mesh_layers(mesh, layer_height, face_index, direction_ratio, vase_mode=True, previous_meshes=None):
 
     all_intersection_lines = []
     Test_mesh = ensure_faces_outward(mesh.copy())
-    
+
     show_lines(Test_mesh, False)
-    
+
     # PRE-CALCULATE NUMBER OF LAYERS
-    # Calculate the maximum distance from centroid to any vertex
-    centroid = Test_mesh.vertices.mean(axis=0)
-    max_distance = np.max(np.linalg.norm(Test_mesh.vertices - centroid, axis=1))
-    
-    # With uniform shrinking, we need max_distance / layer_height iterations
-    # Plus a small buffer for the 0.1 threshold
-    num_layers = int(max_distance / layer_height) + 5  # +5 for safety margin
-    
-    # Safety check to prevent infinite loops
-    if num_layers > 1000000:
-        print(f"Warning: Calculated {num_layers} layers, capping at 1000000")
-        num_layers = 1000000
-    
+    num_layers = 0
+    vase_direction_vector = None
+
+    if vase_mode:
+        # For vase mode, use 3 layers as specified
+        num_layers = 3
+        vase_direction_vector, _ = calculate_vase_plane_orientation(Test_mesh, previous_meshes)
+    else:
+        # Calculate the maximum distance from centroid to any vertex
+        centroid = Test_mesh.vertices.mean(axis=0)
+        max_distance = np.max(np.linalg.norm(Test_mesh.vertices - centroid, axis=1))
+
+        # With uniform shrinking, we need max_distance / layer_height iterations
+        # Plus a small buffer for the 0.1 threshold
+        num_layers = int(max_distance / layer_height) + 5  # +5 for safety margin
+
+        # Safety check to prevent infinite loops
+        if num_layers > 1000000:
+            print(f"Warning: Calculated {num_layers} layers, capping at 1000000")
+            num_layers = 1000000
+
     # Process iterations until mesh is too small
     for i in range(num_layers):
-        # Show lines of the current mesh
-        all_intersection_lines.extend(show_lines(Test_mesh, False))
+        if vase_mode:
+            # VASE MODE: Create perpendicular planes and shift lines inwards
+            lines = process_vase_mode_layer(Test_mesh, vase_direction_vector, layer_height, i, num_layers)
+            all_intersection_lines.extend(lines)
+        else:
+            # Regular mode: Show lines of the current mesh
+            lines = show_lines(Test_mesh, False)
+            all_intersection_lines.extend(lines)
+
         # Apply the UNIFORM Onion Layer transformation
         Test_mesh = Onion_layer(layer_height, face_index, Test_mesh, direction_ratio)
         Test_mesh = ensure_faces_outward(Test_mesh)
-        
+
         # Early exit if mesh becomes too small
         if (Test_mesh.bounds[1][0] - Test_mesh.bounds[0][0] < 0.1 or
             Test_mesh.bounds[1][1] - Test_mesh.bounds[0][1] < 0.1 or
             Test_mesh.bounds[1][2] - Test_mesh.bounds[0][2] < 0.1):
             break
-    
+
     show_lines(Test_mesh, False)
     return all_intersection_lines, i + 1
 
@@ -372,10 +462,14 @@ for index, Test_mesh in enumerate(meshes):
         # Process mesh layers using optimized function
         direction_ratio = 0
         face_index = 2
-        
+        vase_mode = True  # Use vase mode as default
+
+        # Get previous meshes for vase mode plane orientation
+        previous_meshes = meshes[:index] if index > 0 else []
+
         # Use the optimized process_mesh_layers function
         all_intersection_lines, iter_count = process_mesh_layers(
-            Test_mesh, layer_height, face_index, direction_ratio
+            Test_mesh, layer_height, face_index, direction_ratio, vase_mode, previous_meshes
         )
         
         print(f"Processed mesh {index} with {iter_count} iterations")
@@ -397,6 +491,53 @@ for index, Test_mesh in enumerate(meshes):
                                        f"{float(end_point[0]):.6f}, {float(end_point[1]):.6f}, {float(end_point[2]):.6f}, {float(end_point[3]):.6f}, {float(end_point[4]):.4f}, {float(end_point[5]):.6f}\n")
 
         print(f"Saved intersection lines for mesh {index} to {output_filename}")
+
+@profile
+def lines_centroid_shift(centroid, points_list, amount):
+    """
+    Shift points away from centroid along the direction from centroid to each point.
+
+    Args:
+        centroid: numpy array [x, y, z] representing the centroid
+        points_list: list of numpy arrays, each [x, y, z, nx, ny, nz]
+        amount: float, distance to shift each point
+
+    Returns:
+        list of lists containing shifted oriented points
+    """
+    if points_list is None:
+        print("error in lines_centroid_shift points_list is None")
+        raise ValueError("points_list is None")
+
+    if len(points_list) < 1:
+        print("error in lines_centroid_shift points_list length is less than 1")
+        raise ValueError("points_list length is less than 1")
+
+    shifted_list = []
+    for point in points_list:
+        # Extract position from oriented point [x, y, z, nx, ny, nz]
+        position = point[:3]
+
+        # Calculate direction from centroid to point
+        direction = position - centroid
+        direction_norm = np.linalg.norm(direction)
+
+        if direction_norm < 1e-10:
+            # Point is at centroid, shift along default direction
+            direction = np.array([1.0, 0.0, 0.0])
+        else:
+            # Normalize direction
+            direction = direction / direction_norm
+
+        # Shift position along the direction
+        shifted_position = position + direction * amount
+
+        # Create shifted oriented point (keep the same normal)
+        shifted_point = np.concatenate([shifted_position, point[3:]])
+        shifted_list.append([shifted_point])
+
+    return shifted_list
+
 
 # Generate profiling report if debug mode is enabled
 if ProfilerManager.is_debug_mode():

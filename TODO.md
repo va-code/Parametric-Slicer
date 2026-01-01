@@ -1,4 +1,23 @@
 # TODO list
+
+A better way to set plane oreintation: get centroid of convex hull of the meshes that are made before the mesh that is being shifted. Find the point furthest away on the mesh that is being processed from the centroid and use that as the direction vector for the plane. precalculate the number of planes needed for the mesh that is being processed.
+Then for vase mode a set of planes perpendicular to the original set used for precomputing the number of planes needed for the mesh that is being processed. and then line intersections are calculated for the new set of planes.
+then again for vase mode, instead of calculating line intersections for the new set of planes, the lines are shifted inwards from the centroid of the mesh that is being processed. since the layers are calculated from outer to inner.
+So the number of layers in vase mode is 3 layers.
+
+## Changes to make things faster
+- [x] Precalculate number of intersection planes
+- [x] Precalculate number Onions layers - only on the simple version without adaptive layer heights or reduction in mesh complexity
+- [] Adaptive layer heights
+- [] Reduce mesh complexity as mesh reduced from outer surface, less vertexes makes faster intersection line creation
+- []
+- []
+## Changes to add features
+- [x] Change to a "vase mode" for testing to make files smaller and prints quicker. 4 layers alternating or rotating layer directions
+- [] FEA to find where line orientations should be set up
+- [] surface wrapping texture to specify surface path instead of line intersections.
+
+
 # Profiling Analysis vs TODO File
 
 ## Executive Summary
@@ -37,39 +56,6 @@ The profiling data **strongly confirms** the TODO file's priorities, with some i
 - **`ensure_faces_outward`**: 122s (0.86%) - 9,768 calls, avg 12.5ms
 - **`create_planes`**: 46s - 19,668 calls, avg 2.3ms (already fast!)
 - **`Onion_layer`**: 3.8s - 9,702 calls, avg 0.39ms (already optimized!)
-
----
-
-## Comparison with TODO File
-
-### ✅ TODO Priority #1: "Optimize Onion3d.py Infinite Loop" (10-100x speedup)
-
-**Status: PARTIALLY ADDRESSED**
-
-The TODO file correctly identified this as the #1 priority. However, the profiling shows:
-
-1. **The loop structure has been optimized** (now using `process_mesh_layers` with pre-calculated layers)
-   - The TODO suggested replacing the while loop with a for loop based on pre-calculated layers
-   - **This has been implemented!** (see lines 356-371 in Onion3d.py)
-   - However, the function still takes 22.6% of total time
-
-2. **But the internal operations are still slow**:
-   - `show_lines()` is called 9,834 times and takes 21.7% of total time
-   - `calculate_intersection_lines()` is called 19,668 times and takes 21.3% of total time
-   
-3. **The TODO's specific solutions are still relevant**:
-   - ✅ "Pre-calculate number of layers" - **DONE** (lines 356-363)
-   - ❌ "Cache plane intersections" - **NOT DONE** (19,668 calls suggests no caching)
-   - ❌ "Vectorize operations" - **PARTIALLY DONE** (Onion_layer is fast, but intersections aren't)
-   - ❌ "Adaptive layer heights" - **NOT DONE**
-
-### Key Insight from Profiling:
-
-**The loop itself is optimized, but the operations INSIDE the loop are the real bottleneck.**
-
-The TODO estimated 10-100x speedup, but we're only seeing partial gains because:
-- The loop structure is better (for loop vs while loop)
-- But `show_lines()` and `calculate_intersection_lines()` are still being called thousands of times with no caching
 
 ---
 
@@ -146,26 +132,6 @@ The TODO estimated 10-100x speedup, but we're only seeing partial gains because:
 
 ---
 
-## Individual Mesh Performance
-
-**Worst performing meshes:**
-- `process_mesh_34`: 445.8s (7.4 minutes!)
-- `process_mesh_64`: 261.5s (4.4 minutes)
-- `process_mesh_5`: 168.1s (2.8 minutes)
-- `process_mesh_32`: 167.2s (2.8 minutes)
-
-**Best performing meshes:**
-- `process_mesh_44`: 2.6s
-- `process_mesh_42`: 2.5s
-- `process_mesh_58`: 6.7s
-
-**Insight:** Some meshes are 170x slower than others! This suggests:
-- Mesh complexity varies wildly
-- Some meshes might have degenerate geometry
-- Adaptive algorithms could help
-
----
-
 ## Recommendations Based on Profiling
 
 ### Immediate Actions (High Impact, Easy):
@@ -174,13 +140,7 @@ The TODO estimated 10-100x speedup, but we're only seeing partial gains because:
    - If the same plane is checked multiple times, cache the result
    - Estimated speedup: 2-5x for `calculate_intersection_lines`
 
-2. **Reduce `show_lines()` call frequency** (TODO priority #1, optimization)
-   - Don't call `show_lines()` every single iteration
-   - Maybe every Nth iteration, or use adaptive frequency
-   - Estimated speedup: 2-10x reduction in calls
-
 3. **Optimize `calculate_intersection_lines()`** (New priority)
-   - Add early termination if no intersections found
    - Use spatial acceleration for plane rejection
    - Estimated speedup: 2-5x
 
@@ -220,23 +180,6 @@ This aligns with TODO file's estimate: "10-50x faster" → "30-60 minutes → 1-
 
 ---
 
-## Conclusion
-
-✅ **The TODO file is accurate and well-prioritized**
-
-The profiling data confirms:
-1. Onion3d is indeed the bottleneck (65.6% of time)
-2. The loop optimization (TODO #1) is partially done but needs more work
-3. The specific solutions suggested (caching, vectorization) are still needed
-4. The estimated speedup (10-100x) is achievable if we implement the remaining optimizations
-
-**Next Steps:**
-1. Implement plane intersection caching (TODO #1, solution #2)
-2. Reduce `show_lines()` call frequency
-3. Optimize `calculate_intersection_lines()` with spatial acceleration
-4. Add adaptive layer heights
-
-After these optimizations, we should see the 10-50x speedup predicted in the TODO file.
 
 
 
@@ -244,19 +187,6 @@ After these optimizations, we should see the 10-50x speedup predicted in the TOD
 
 
 
-
-
-
----old---
-
-
-This document outlines performance optimizations for the Parametric Slicer codebase, ranked by estimated impact.
-
-## Priority Rankings
-
-### 🔴 **CRITICAL - Highest Impact**
-
----
 
 ## 1. Optimize Onion3d.py Infinite Loop (10-100x speedup)
 
@@ -490,25 +420,6 @@ for index, Test_mesh in tqdm(enumerate(meshes), desc="Processing meshes"):
 
 ---
 
-## Implementation Order
-
-1. **Start with #2 (Adjaceny.py)** - Easiest and high impact
-2. **Then #3 (path.py cdist)** - Also easy, high impact
-3. **Then #1 (Onion3d.py)** - Biggest impact but more complex
-4. **Then #4 (path.py convex hull)** - Medium difficulty
-5. **Then #5 (mesh caching)** - Requires refactoring main.py
-6. **Finally #6 (progress bars)** - Nice to have
-
----
-
-## Expected Overall Speedup
-
-For complex meshes (>10K vertices, 20+ decomposed parts):
-- **Before optimizations:** 30-60 minutes
-- **After optimizations:** 1-5 minutes
-- **Total speedup:** 10-50x faster
-
----
 
 ## Testing
 

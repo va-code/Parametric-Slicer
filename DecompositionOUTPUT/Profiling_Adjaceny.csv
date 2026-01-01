@@ -1,6 +1,0 @@
-Function Name,Call Count,Total Time (s),Average Time (ms),Min Time (ms),Max Time (ms)
-compute_adjacency,1,10.824230,10824.229717,10824.229717,10824.229717
-__main__.check_mesh_adjacency,2145,10.820056,5.044315,0.043392,10.834217
-load_meshes,1,0.054593,54.593325,54.593325,54.593325
-save_adjacency_list,1,0.000232,0.231981,0.231981,0.231981
-__main__.remove_duplicate_connections,1,0.000059,0.059128,0.059128,0.059128

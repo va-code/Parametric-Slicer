@@ -1,0 +1,63 @@
+
+==========================================================================================
+PERFORMANCE PROFILING REPORT
+==========================================================================================
+
+Total execution time tracked: 0.001s
+Total function calls tracked: 13
+
+TOP FUNCTIONS BY TOTAL TIME:
+------------------------------------------------------------------------------------------
+Function Name                               Calls     Total(s)      Avg(ms)      Min(ms)      Max(ms)
+------------------------------------------------------------------------------------------
+load_meshes                                     1        0.000        0.318        0.318        0.318
+save_adjacency_list                             1        0.000        0.169        0.169        0.169
+compute_adjacency                               1        0.000        0.055        0.055        0.055
+check_mesh_adjacency                           10        0.000        0.005        0.002        0.011
+------------------------------------------------------------------------------------------
+
+TIME DISTRIBUTION ANALYSIS:
+------------------------------------------------------------------------------------------
+Function Name                                 % of Total    Cumulative %
+------------------------------------------------------------------------------------------
+load_meshes                                       53.58%          53.58%
+save_adjacency_list                               28.36%          81.95%
+compute_adjacency                                  9.20%          91.15%
+check_mesh_adjacency                               8.85%         100.00%
+------------------------------------------------------------------------------------------
+
+MOST FREQUENTLY CALLED FUNCTIONS:
+------------------------------------------------------------------------------------------
+Function Name                                 Call Count    Avg Time(ms)
+------------------------------------------------------------------------------------------
+check_mesh_adjacency                                  10           0.005
+load_meshes                                            1           0.318
+save_adjacency_list                                    1           0.169
+compute_adjacency                                      1           0.055
+------------------------------------------------------------------------------------------
+
+POTENTIAL BOTTLENECKS:
+------------------------------------------------------------------------------------------
+(Functions with high total time OR high call count)
+
+  • check_mesh_adjacency
+    - Total time: 0.000s (8.9% of total)
+    - Calls: 10
+    - Avg time: 0.005ms
+
+  • load_meshes
+    - Total time: 0.000s (53.6% of total)
+    - Calls: 1
+    - Avg time: 0.318ms
+
+  • save_adjacency_list
+    - Total time: 0.000s (28.4% of total)
+    - Calls: 1
+    - Avg time: 0.169ms
+
+  • compute_adjacency
+    - Total time: 0.000s (9.2% of total)
+    - Calls: 1
+    - Avg time: 0.055ms
+
+==========================================================================================

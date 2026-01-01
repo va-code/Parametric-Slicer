@@ -1,0 +1,55 @@
+
+==========================================================================================
+PERFORMANCE PROFILING REPORT
+==========================================================================================
+
+Total execution time tracked: 2.054s
+Total function calls tracked: 3
+
+TOP FUNCTIONS BY TOTAL TIME:
+------------------------------------------------------------------------------------------
+Function Name                               Calls     Total(s)      Avg(ms)      Min(ms)      Max(ms)
+------------------------------------------------------------------------------------------
+run_python_decomposer                           1        2.054     2053.614     2053.614     2053.614
+load_decomposed_meshes                          1        0.001        0.542        0.542        0.542
+verify_decomposed_meshes                        1        0.000        0.105        0.105        0.105
+------------------------------------------------------------------------------------------
+
+TIME DISTRIBUTION ANALYSIS:
+------------------------------------------------------------------------------------------
+Function Name                                 % of Total    Cumulative %
+------------------------------------------------------------------------------------------
+run_python_decomposer                             99.97%          99.97%
+load_decomposed_meshes                             0.03%          99.99%
+verify_decomposed_meshes                           0.01%         100.00%
+------------------------------------------------------------------------------------------
+
+MOST FREQUENTLY CALLED FUNCTIONS:
+------------------------------------------------------------------------------------------
+Function Name                                 Call Count    Avg Time(ms)
+------------------------------------------------------------------------------------------
+run_python_decomposer                                  1        2053.614
+load_decomposed_meshes                                 1           0.542
+verify_decomposed_meshes                               1           0.105
+------------------------------------------------------------------------------------------
+
+POTENTIAL BOTTLENECKS:
+------------------------------------------------------------------------------------------
+(Functions with high total time OR high call count)
+
+  • run_python_decomposer
+    - Total time: 2.054s (100.0% of total)
+    - Calls: 1
+    - Avg time: 2053.614ms
+
+  • load_decomposed_meshes
+    - Total time: 0.001s (0.0% of total)
+    - Calls: 1
+    - Avg time: 0.542ms
+
+  • verify_decomposed_meshes
+    - Total time: 0.000s (0.0% of total)
+    - Calls: 1
+    - Avg time: 0.105ms
+
+==========================================================================================
